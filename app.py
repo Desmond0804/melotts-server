@@ -17,7 +17,7 @@ device = "auto"
 model = None
 
 @asynccontextmanager
-async def lifespan():
+async def lifespan(app: FastAPI):
     global model
     global speaker_ids
     # load TTS model
