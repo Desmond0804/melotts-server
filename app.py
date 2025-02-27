@@ -7,14 +7,17 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from melo.api import TTS
+from langdetect import detect
 
 load_dotenv()
-TTS_LANGUAGE = os.getenv("TTS_LANGUAGE", "EN") # EN -> English, ES -> Spanish, FR -> French, ZH -> Chinese, JP -> Japanese, KR -> Korean
-TTS_RESPONSE_FORMAT = os.getenv("TTS_RESPONSE_FORMAT", "mp3")
-TTS_SPEED = float(os.getenv("TTS_SPEED", 1.0))
+TTS_LANGUAGE = os.getenv("TTS_LANGUAGE", "EN") # EN -> English, ES -> Spanish, FR -> French, ZH_MIX_EN -> Chinese, JP -> Japanese, KR -> Korean
+TTS_VOICE = os.getenv("TTS_VOICE", "EN-Default") # EN-US, EN-BR, EN-INDIA, EN-AU, EN-Default, ES, FR, ZH, JP, KR
+TTS_RESPONSE_FORMAT = os.getenv("TTS_RESPONSE_FORMAT", "mp3") # mp3, opus, aac, flac, wav
+TTS_SPEED = float(os.getenv("TTS_SPEED", 1.0)) # 0.25 - 4.0
 
 device = "auto"
 model = None
+supported_languages = ["en", "es", "fr", "ja", "ko", "zh-cn", "zh-tw"]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,14 +28,14 @@ async def lifespan(app: FastAPI):
     speaker_ids = model.hps.data.spk2id
     yield
     # clean up TTS model & release resources
-    model.close()
+    del model
 
 class TTSRequest(BaseModel):
     model: str = "tts-1" # or "tts-1-hd"
     input: str
-    voice: str = "EN-Default"  # EN-US, EN-BR, EN-INDIA, EN-AU, EN-Default, ES, FR, ZH, JP, KR
-    response_format: str = TTS_RESPONSE_FORMAT # mp3, opus, aac, flac, wav
-    speed: float = TTS_SPEED # 0.25 - 4.0
+    voice: str = TTS_VOICE
+    response_format: str = TTS_RESPONSE_FORMAT
+    speed: float = TTS_SPEED
 
 app = FastAPI(lifespan=lifespan)
 
@@ -51,10 +54,35 @@ async def generate_speech(request: TTSRequest):
     elif response_format == "wav":
         media_type = "audio/wav"
 
+    language = detect(request.input)
+    if language not in supported_languages:
+        language = "EN"
+    else: # match the langauge codes of langdetect to MeloTTS
+        if language == "en" or language == "es" or language == "fr":
+            language = language.upper()
+        elif language == "zh-cn" or language == "zh-tw":
+            language = "ZH"
+        elif language == "ja":
+            language = "JP"
+        elif language == "ko":
+            language = "KR"
+    
+    # set the voice based on the langauge
+    voice = language
+    if language == "EN":
+        voice = "EN-Default"
+
+    global model
+    global speaker_ids
+    # reload model if language changed
+    if language != model.language.split('_')[0]:
+        model = TTS(language=language, device=device)
+        speaker_ids = model.hps.data.spk2id
+
     # generate speech & save to a temporary file
     with tempfile.NamedTemporaryFile(delete=False, suffix=f".{request.response_format}") as tmp:
         output_path = tmp.name
-        model.tts_to_file(request.input, speaker_id=speaker_ids[request.voice], output_path=output_path, speed=request.speed)
+        model.tts_to_file(request.input, speaker_id=speaker_ids[voice], output_path=output_path, speed=request.speed)
     
     def generate():
         with open(output_path, mode="rb") as audio_file:
