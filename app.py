@@ -17,14 +17,22 @@ TTS_SPEED = float(os.getenv("TTS_SPEED", 1.0)) # 0.25 - 4.0
 
 device = "auto"
 model = None
-supported_languages = ["en", "es", "fr", "ja", "ko", "zh-cn", "zh-tw"]
+supported_languages = ["en", "es", "fr", "ja", "ko", "zh-cn", "zh-tw", "ms", "id"]
+
+# get TTS model for MS language
+from huggingface_hub import hf_hub_download
+ckpt_path = hf_hub_download(repo_id='mesolitica/MeloTTS-MS', filename='model.pth')
+config_path = hf_hub_download(repo_id='mesolitica/MeloTTS-MS', filename='config.json')
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global model
     global speaker_ids
     # load TTS model
-    model = TTS(language=TTS_LANGUAGE, device=device)
+    if TTS_LANGUAGE == "MS":
+        model = TTS(language=TTS_LANGUAGE, device=device, config_path=config_path, ckpt_path=ckpt_path)
+    else:
+        model = TTS(language=TTS_LANGUAGE, device=device)
     speaker_ids = model.hps.data.spk2id
     yield
     # clean up TTS model & release resources
@@ -55,34 +63,44 @@ async def generate_speech(request: TTSRequest):
         media_type = "audio/wav"
 
     language = detect(request.input)
+    print(f"*****Language Detected: {language}*****")
     if language not in supported_languages:
         language = "EN"
     else: # match the langauge codes of langdetect to MeloTTS
-        if language == "en" or language == "es" or language == "fr":
-            language = language.upper()
-        elif language == "zh-cn" or language == "zh-tw":
+        if language == "zh-cn" or language == "zh-tw":
             language = "ZH"
         elif language == "ja":
             language = "JP"
         elif language == "ko":
             language = "KR"
+        elif language == "id":
+            language = "MS"
+        else:
+            language = language.upper()
     
     # set the voice based on the langauge
     voice = language
     if language == "EN":
         voice = "EN-Default"
+    if language == "MS":
+        voice = "husein-chatbot"
 
     global model
     global speaker_ids
     # reload model if language changed
     if language != model.language.split('_')[0]:
-        model = TTS(language=language, device=device)
+        if language == "MS":
+            model = TTS(language=language, device=device, config_path=config_path, ckpt_path=ckpt_path)
+        else:
+            model = TTS(language=language, device=device)
         speaker_ids = model.hps.data.spk2id
 
+    print(f"*****Final Language: {language}*****")
+    print(f"*****Final Voice: {voice}*****")
     # generate speech & save to a temporary file
     with tempfile.NamedTemporaryFile(delete=False, suffix=f".{request.response_format}") as tmp:
         output_path = tmp.name
-        model.tts_to_file(request.input, speaker_id=speaker_ids[voice], output_path=output_path, speed=request.speed)
+        model.tts_to_file(request.input, speaker_id=speaker_ids[voice], output_path=output_path, speed=request.speed, split=True)
     
     def generate():
         with open(output_path, mode="rb") as audio_file:

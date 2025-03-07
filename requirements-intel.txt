@@ -1,0 +1,7 @@
+melotts @ git+https://github.com/Desmond0804/MeloTTS.git@MeloTTS-MS
+dotenv
+langdetect
+
+--extra-index-url https://download.pytorch.org/whl/test/xpu
+torch
+torchaudio
