@@ -1,0 +1,21 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+docker-compose.yml
+Dockerfile
+Dockerfile*
+.docker
+.dockerignore
+
+*.md
+.env
+.env.local
+.env.*
+.venv/
+venv/
+
+# VS Code
+.vscode/
