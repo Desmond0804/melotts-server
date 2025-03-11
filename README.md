@@ -18,19 +18,19 @@ python app.py
 git clone -b MeloTTS-MS https://github.com/Desmond0804/melotts-server.git
 docker build \
     --build-arg http_proxy=$http_proxy \
-	--build-arg https_proxy=$https_proxy \
-	-t melotts-server .
+    --build-arg https_proxy=$https_proxy \
+    -t melotts-server .
 ```
 
 ## Run Docker Container
 ```
 docker run -d \
-	--net=host \
-	-e http_proxy=$http_proxy \
-	-e https_proxy=$https_proxy \
-	-e no_proxy=$no_proxy \
+    --net=host \
+    -e http_proxy=$http_proxy \
+    -e https_proxy=$https_proxy \
+    -e no_proxy=$no_proxy \
     --device=/dev/dri \
-	--restart always \
+    --restart always \
     --name=melotts-server \
     melotts-server
 ```
