@@ -51,6 +51,9 @@ RUN set -eux && \
     python -m unidic download && \
     python -m nltk.downloader averaged_perceptron_tagger_eng && \
     # 
+    # Download TTS models
+    python /melotts-server/init_downloads.py && \
+    # 
     # Clean up to reduce image size
     apt-get autoremove -y && \ 
     apt-get clean && \ 

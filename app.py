@@ -16,7 +16,6 @@ TTS_RESPONSE_FORMAT = os.getenv("TTS_RESPONSE_FORMAT", "mp3") # mp3, opus, aac, 
 TTS_SPEED = float(os.getenv("TTS_SPEED", 1.0)) # 0.25 - 4.0
 
 device = "auto"
-model = None
 supported_languages = ["en", "es", "fr", "ja", "ko", "zh-cn", "zh-tw", "ms", "id"]
 
 # get TTS model for MS language
@@ -26,17 +25,20 @@ config_path = hf_hub_download(repo_id='mesolitica/MeloTTS-MS', filename='config.
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global model
-    global speaker_ids
-    # load TTS model
-    if TTS_LANGUAGE == "MS":
-        model = TTS(language=TTS_LANGUAGE, device=device, config_path=config_path, ckpt_path=ckpt_path)
-    else:
-        model = TTS(language=TTS_LANGUAGE, device=device)
-    speaker_ids = model.hps.data.spk2id
+    # load TTS models
+    global models
+    models = {
+        'EN': TTS(language='EN', device=device),
+        'ES': TTS(language='ES', device=device),
+        'FR': TTS(language='FR', device=device),
+        'ZH': TTS(language='ZH', device=device),
+        'JP': TTS(language='JP', device=device),
+        'KR': TTS(language='KR', device=device),
+        'MS': TTS(language='MS', device=device, config_path=config_path, ckpt_path=ckpt_path),
+    }
     yield
     # clean up TTS model & release resources
-    del model
+    del models
 
 class TTSRequest(BaseModel):
     model: str = "tts-1" # or "tts-1-hd"
@@ -85,22 +87,15 @@ async def generate_speech(request: TTSRequest):
     if language == "MS":
         voice = "husein-chatbot"
 
-    global model
-    global speaker_ids
-    # reload model if language changed
-    if language != model.language.split('_')[0]:
-        if language == "MS":
-            model = TTS(language=language, device=device, config_path=config_path, ckpt_path=ckpt_path)
-        else:
-            model = TTS(language=language, device=device)
-        speaker_ids = model.hps.data.spk2id
+    global models
 
     print(f"*****Final Language: {language}*****")
     print(f"*****Final Voice: {voice}*****")
     # generate speech & save to a temporary file
     with tempfile.NamedTemporaryFile(delete=False, suffix=f".{request.response_format}") as tmp:
         output_path = tmp.name
-        model.tts_to_file(request.input, speaker_id=speaker_ids[voice], output_path=output_path, speed=request.speed, split=True)
+        speaker_ids = models[language].hps.data.spk2id
+        models[language].tts_to_file(request.input, speaker_id=speaker_ids[voice], output_path=output_path, speed=request.speed, split=True)
     
     def generate():
         with open(output_path, mode="rb") as audio_file:
