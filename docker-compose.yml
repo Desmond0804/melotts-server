@@ -1,0 +1,25 @@
+services:
+  melotts:
+    build:
+      context: .
+      args:
+        http_proxy: ${http_proxy:-}
+        https_proxy: ${https_proxy:-}
+        no_proxy: ${no_proxy:-}
+      dockerfile: Dockerfile
+    image: melotts-server
+    container_name: melotts
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - no_proxy=${no_proxy:-}
+    devices:
+      - /dev/dri
+    shm_size: 32G
+    deploy:
+      resources:
+        limits:
+          memory: 32G

@@ -16,6 +16,7 @@ python app.py
 ## Build Docker Image
 ```
 git clone -b MeloTTS-MS https://github.com/Desmond0804/melotts-server.git
+cd melotts-server
 docker build \
     --build-arg http_proxy=$http_proxy \
     --build-arg https_proxy=$https_proxy \
@@ -31,6 +32,11 @@ docker run -d \
     -e no_proxy=$no_proxy \
     --device=/dev/dri \
     --restart always \
-    --name=melotts-server \
+    --name=melotts \
     melotts-server
+```
+
+## Run Docker Container (using Docker Compose)
+```
+docker compose up -d
 ```
