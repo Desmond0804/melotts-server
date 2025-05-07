@@ -7,16 +7,17 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from melo.api import TTS
-from langdetect import detect
+from lingua import Language, LanguageDetectorBuilder
 
 load_dotenv()
-TTS_LANGUAGE = os.getenv("TTS_LANGUAGE", "EN") # EN -> English, ES -> Spanish, FR -> French, ZH_MIX_EN -> Chinese, JP -> Japanese, KR -> Korean
-TTS_VOICE = os.getenv("TTS_VOICE", "EN-Default") # EN-US, EN-BR, EN-INDIA, EN-AU, EN-Default, ES, FR, ZH, JP, KR
+TTS_LANGUAGE = os.getenv("TTS_LANGUAGE", "EN") # EN -> English, ES -> Spanish, FR -> French, JP -> Japanese, KR -> Korean, ZH_MIX_EN -> Chinese, MS -> Malay
+TTS_VOICE = os.getenv("TTS_VOICE", "EN-Default") # EN-US, EN-BR, EN-INDIA, EN-AU, EN-Default, ES, FR, JP, KR, ZH, husein-chatbot, shafiqah-idayu-chatbot, anwar-ibrahim
 TTS_RESPONSE_FORMAT = os.getenv("TTS_RESPONSE_FORMAT", "mp3") # mp3, opus, aac, flac, wav
 TTS_SPEED = float(os.getenv("TTS_SPEED", 1.0)) # 0.25 - 4.0
 
 device = "auto"
-supported_languages = ["en", "es", "fr", "ja", "ko", "zh-cn", "zh-tw", "ms", "id"]
+supported_languages = [Language.ENGLISH, Language.SPANISH, Language.FRENCH, Language.JAPANESE, Language.KOREAN, Language.CHINESE, Language.MALAY]
+language_detector = LanguageDetectorBuilder.from_languages(*supported_languages).build()
 
 # get TTS model for MS language
 from huggingface_hub import hf_hub_download
@@ -64,28 +65,21 @@ async def generate_speech(request: TTSRequest):
     elif response_format == "wav":
         media_type = "audio/wav"
 
-    language = detect(request.input)
-    print(f"*****Language Detected: {language}*****")
-    if language not in supported_languages:
-        language = "EN"
-    else: # match the langauge codes of langdetect to MeloTTS
-        if language == "zh-cn" or language == "zh-tw":
-            language = "ZH"
-        elif language == "ja":
-            language = "JP"
-        elif language == "ko":
-            language = "KR"
-        elif language == "id":
-            language = "MS"
-        else:
-            language = language.upper()
+    language = language_detector.detect_language_of(request.input)
+    language = "EN" if language is None else language.iso_code_639_1.name # get langauge code
+
+    # match the langauge codes of lingua-py to MeloTTS
+    if language == "JA":
+        language = "JP"
+    elif language == "KO":
+        language = "KR"
     
     # set the voice based on the langauge
     voice = language
     if language == "EN":
         voice = "EN-Default"
     if language == "MS":
-        voice = "husein-chatbot"
+        voice = "shafiqah-idayu-chatbot"
 
     global models
 
