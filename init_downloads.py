@@ -18,5 +18,27 @@ if __name__ == '__main__':
         'MS': TTS(language='MS', device=device, config_path=config_path, ckpt_path=ckpt_path),
     }
 
-    # 1st execution for ZH to build prefix dict to reduce loading time -> https://github.com/myshell-ai/MeloTTS/issues/130
-    models['ZH'].tts_to_file('text-to-speech 领域近年来发展迅速', speaker_id=models['ZH'].hps.data.spk2id['ZH'], split=True)
+    sentences = {
+        'EN': "Did you ever hear a folk tale about a giant turtle?",
+        'ES': "El resplandor del sol acaricia las olas, pintando el cielo con una paleta deslumbrante.",
+        'FR': "La lueur dorée du soleil caresse les vagues, peignant le ciel d'une palette éblouissante.",
+        'ZH': "text-to-speech 领域近年来发展迅速",
+        'JP': "彼は毎朝ジョギングをして体を健康に保っています。",
+        'KR': "안녕하세요! 오늘은 날씨가 정말 좋네요.",
+        'MS': "Perubahan iklim melibatkan perubahan signifikan dalam corak cuaca.",
+    }
+
+    voices = {
+        'EN': "EN-Default",
+        'ES': "ES",
+        'FR': "FR",
+        'ZH': "ZH",
+        'JP': "JP",
+        'KR': "KR",
+        'MS': "shafiqah-idayu-chatbot",
+    }
+
+    # 1st execution for all model to preload them
+    for key in models.keys():
+         models[key].tts_to_file(sentences[key], speaker_id=models[key].hps.data.spk2id[voices[key]], split=True)
+    
