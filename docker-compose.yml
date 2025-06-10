@@ -6,7 +6,7 @@ services:
         http_proxy: ${http_proxy:-}
         https_proxy: ${https_proxy:-}
         no_proxy: ${no_proxy:-}
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-LNL
     image: melotts-server
     container_name: melotts
     restart: always
@@ -16,8 +16,16 @@ services:
       - http_proxy=${http_proxy:-}
       - https_proxy=${https_proxy:-}
       - no_proxy=${no_proxy:-}
+      - HF_HOME=/app/hf_home
+      - NLTK_DATA=/app/nltk_data
     devices:
       - /dev/dri
+    volumes:
+      - ./.cache/tts/hf_home:/app/hf_home
+      - ./.cache/tts/nltk_data:/app/nltk_data
+      - ./.cache/tts/Malaya:/root/Malaya
+      - ./.cache/tts/Malaya-Speech:/root/Malaya-Speech
+      - ./.cache/tts/jieba:/tmp
     shm_size: 32G
     deploy:
       resources:

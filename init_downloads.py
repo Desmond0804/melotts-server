@@ -1,5 +1,14 @@
 if __name__ == '__main__':
+    import os
+    import sys
 
+    # exit if models already downloaded
+    HF_HOME = os.getenv('HF_HOME', '/app/hf_home')
+    check_dir = os.path.join(HF_HOME, 'hub')
+    if os.path.exists(check_dir):
+        if len(os.listdir(check_dir)) > 0:
+            sys.exit(0)
+    
     from melo.api import TTS
     device = 'auto'
 
@@ -40,5 +49,5 @@ if __name__ == '__main__':
 
     # 1st execution for all model to preload them
     for key in models.keys():
-         models[key].tts_to_file(sentences[key], speaker_id=models[key].hps.data.spk2id[voices[key]], split=True)
+        models[key].tts_to_file(sentences[key], speaker_id=models[key].hps.data.spk2id[voices[key]], split=True)
     
