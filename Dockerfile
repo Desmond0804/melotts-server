@@ -49,7 +49,6 @@ RUN set -eux && \
     pip install --upgrade pip setuptools wheel && \
     pip install -r /melotts-server/requirements-intel.txt && \
     python -m unidic download && \
-    python -m nltk.downloader averaged_perceptron_tagger_eng && \
     # 
     # Clean up to reduce image size
     apt-get autoremove -y && \ 
@@ -59,4 +58,6 @@ RUN set -eux && \
 EXPOSE 8000
 
 # Download TTS models & Start the MeloTTS server
-CMD python init_downloads.py && python app.py
+CMD python -m nltk.downloader averaged_perceptron_tagger_eng && \
+    python init_downloads.py && \
+    python app.py
