@@ -1,2 +1,8 @@
 .env
-.venv
+.env.local
+.env.*
+.venv/
+venv/
+
+.cache*
+cache*
