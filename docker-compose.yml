@@ -18,6 +18,7 @@ services:
       - no_proxy=${no_proxy:-}
       - HF_HOME=/app/hf_home
       - NLTK_DATA=/app/nltk_data
+      - TTS_LANGUAGE=auto # auto, EN, ES, FR, JP, KR, ZH, MS
     devices:
       - /dev/dri
     volumes:
